@@ -2,6 +2,9 @@
 
 These are the instructions for the back-end server for the GLPAAC (Gestalt Language Processors Augmentative and Alternative Communication) application.
 
+# Deployment Link
+- http://localhost:5000/
+
 ## Prerequisites
 
 - Node.js (v16 or higher)
@@ -34,16 +37,18 @@ These are the instructions for the back-end server for the GLPAAC (Gestalt Langu
    npm run dev
    ```
 
-### Authentication
+# Authentication
 
 - `POST /api/auth/signup` - Register a new user
 - `POST /api/auth/login` - User login
 - `GET /api/auth/me` - Get current user information (requires JWT token)
 
-### Testing
+# Testing
 
 - `GET /api/test-db` - Test database connection
 - Run test files in the terminal
   ```
   npx vitest
   ```
+
+# ***SEE GLPAAC-front-end README.md file for further setup of front-end***

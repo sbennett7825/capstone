@@ -1,11 +1,12 @@
 # GLPAAC Back-End
 
-This is the back-end server for the GLPAAC (Gestalt Language Processors Augmentative and Alternative Communication) application.
+These are the instructions for the back-end server for the GLPAAC (Gestalt Language Processors Augmentative and Alternative Communication) application.
 
 ## Prerequisites
 
 - Node.js (v16 or higher)
 - PostgreSQL (v12 or higher)
+- Google Chrome
 
 ## Setup Instructions
 
@@ -16,6 +17,10 @@ This is the back-end server for the GLPAAC (Gestalt Language Processors Augmenta
    npm install
    ```
 4. Create a `.env` file based on `.env.example`
+5. Create a temporary access token for the opensymbols.org API:
+   ```
+   Go to opensymbols.org/api, click "submit" under "Generate Access Token", scroll to the "GET" parameters, copy the "access_token", and paste this temporary token under `OPENSYMBOLS_ACCESS_KEY=` in the `.env` file you created in the `GLPAAC-back-end`
+   ```
 5. Create a PostgreSQL database:
    ```
    createdb glpaac_db
@@ -29,8 +34,6 @@ This is the back-end server for the GLPAAC (Gestalt Language Processors Augmenta
    npm run dev
    ```
 
-## API Endpoints
-
 ### Authentication
 
 - `POST /api/auth/signup` - Register a new user
@@ -40,3 +43,7 @@ This is the back-end server for the GLPAAC (Gestalt Language Processors Augmenta
 ### Testing
 
 - `GET /api/test-db` - Test database connection
+- Run test files in the terminal
+  ```
+  npx vitest
+  ```

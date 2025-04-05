@@ -4,20 +4,27 @@
     "description": "Back-end server for GLPAAC application",
     "main": "server.js",
     "scripts": {
-      "start": "node server.js",
-      "dev": "nodemon server.js",
-      "init-db": "node db/init.js"
+        "start": "node server.js",
+        "dev": "nodemon server.js",
+        "init-db": "node db/init.js"
     },
     "dependencies": {
-      "bcrypt": "^5.1.1",
-      "body-parser": "^1.20.2",
-      "cors": "^2.8.5",
-      "dotenv": "^16.4.1",
-      "express": "^4.18.2",
-      "jsonwebtoken": "^9.0.2",
-      "pg": "^8.11.3"
+        "axios": "^1.8.4",
+        "bcrypt": "^5.1.1",
+        "body-parser": "^1.20.3",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2",
+        "fs": "^0.0.1-security",
+        "jsonwebtoken": "^9.0.2",
+        "node-mocks-http": "^1.16.2",
+        "path": "^0.12.7",
+        "supertest": "^7.1.0"
     },
     "devDependencies": {
-      "nodemon": "^3.0.3"
+        "nodemon": "^3.0.3",
+        "pg": "^8.14.1",
+        "sinon": "^20.0.0",
+        "vitest": "^3.1.1"
     }
-  }
+}

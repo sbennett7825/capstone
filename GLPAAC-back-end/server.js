@@ -1,9 +1,11 @@
-// GLPAAC-back-end/server.js
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const authRoutes = require('./routes/auth');
+const userSettingsRoutes = require('./routes/userSettings');
+const symbolsRoutes = require('./routes/symbolsRoutes'); // Import our new route
 const { pool } = require('./db/config');
+const dotenv = require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,6 +17,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/user-settings', userSettingsRoutes);
+app.use('/api/symbols', symbolsRoutes); // Register our new route
 
 // Test DB connection
 app.get('/api/test-db', async (req, res) => {

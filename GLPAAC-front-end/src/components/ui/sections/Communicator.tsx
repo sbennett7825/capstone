@@ -1,58 +1,55 @@
-    import React, { useState, createContext, useEffect, useRef } from 'react';
-    import '../../../App.css';
-    import '../../../index.css';
+import React, { useState, createContext, useEffect, useRef } from 'react';
+import '../../../App.css';
+import '../../../index.css';
     
     
-    
-    import { col1, col2, grid } from '../../../constants/CardTextConstants.tsx';
-    import {col1Images,col2Images,gridImages} from '../../../constants/DefaultImageGroupingConstants.tsx';
-    import deleteWord from '../../../constants/local-images/default-nav-images/delete-word.png';
-    import clear from '../../../constants/local-images/default-nav-images/clear.png';
-    import { Card } from '../card.tsx';
-    import { Input } from '../input.tsx';
-    import { Textarea } from '../textarea.tsx';
-    import {
-      Dialog,
-      DialogContent,
-      DialogHeader,
-      DialogTitle,
-      DialogFooter,
-    } from '../dialog.tsx';
-    import { Button } from '../button.tsx';
-    import {
-      DropdownMenu,
-      DropdownMenuContent,
-      DropdownMenuItem,
-      DropdownMenuTrigger,
-    } from '../dropdown-menu.tsx';
-    import ImageSearch from '../sections/EditDialog/ImageSearch.tsx';
-    import SearchField from '../sections/EditDialog/SearchField.tsx';
-    import Images from '../sections/EditDialog/Images.tsx';
-    import useAxios from '../../../hooks/useAxios.tsx';
-    import Voice from '../../../components/ui/sections/Voice/Voice.tsx';
-    import { Menu, Edit, LogIn, Square, PlayCircle, Settings } from 'lucide-react';
-    
-    
-    
-    //Create Context
-    export const ImageContext = createContext({});
-    export const VoiceContext = createContext(null);
-    
-    
-    
-    //Opensymbols.org API Access Key
-    const REACT_APP_ACCESS_KEY = import.meta.env.VITE_REACT_APP_ACCESS_KEY;
+import { col1, col2, grid } from '../../../constants/CardTextConstants.tsx';
+import {col1Images,col2Images,gridImages} from '../../../constants/DefaultImageGroupingConstants.tsx';
+import deleteWord from '../../../constants/local-images/default-nav-images/delete-word.png';
+import clear from '../../../constants/local-images/default-nav-images/clear.png';
+import { Card } from '../card.tsx';
+import { Input } from '../input.tsx';
+import { Textarea } from '../textarea.tsx';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../dialog.tsx';
+import { Button } from '../button.tsx';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../dropdown-menu.tsx';
+import ImageSearch from '../sections/EditDialog/ImageSearch.tsx';
+import SearchField from '../sections/EditDialog/SearchField.tsx';
+import Images from '../sections/EditDialog/Images.tsx';
+import useAxios from '../../../hooks/useAxios.tsx';
+import Voice from '../../../components/ui/sections/Voice/Voice.tsx';
+import { Menu, Edit, LogIn, Square, PlayCircle, Settings } from 'lucide-react';
 
+
+//Create Context
+export const ImageContext = createContext({});
+export const VoiceContext = createContext(null);
+    
+
+// Get API URL from environment
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 
 const Communicator = ({ onLogout }:any) => {
      
+
       //Image Search
       const [searchImage, setSearchImage] = useState('');
       const [selectedImage, setSelectedImage] = useState(null);
     
       const { response, isLoading, error, fetchData } = 
-        useAxios(`/api/v2/symbols?access_token=${REACT_APP_ACCESS_KEY}&q=cats`);
+        useAxios(`${API_URL}/symbols?q=cats`);
       
       const value = {
         selectedImage,
@@ -62,17 +59,20 @@ const Communicator = ({ onLogout }:any) => {
         error,
         fetchData,
         searchImage,
-        setSearchImage
+        setSearchImage,
       };
-      
 
-    
+      
       //Voice State
       const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false);
       const [isSpeaking, setIsSpeaking] = useState(false);
       const speechSynthRef = useRef(window.speechSynthesis);
       const utteranceRef = useRef(null);
+      const [voiceRate, setVoiceRate] = useState(1);
+      const [voicePitch, setVoicePitch] = useState(1);
+      const [voiceName, setVoiceName] = useState('');
     
+
       //Card State
       const [inputText, setInputText] = useState('');
       const [editMode, setEditMode] = useState(false);
@@ -100,50 +100,90 @@ const Communicator = ({ onLogout }:any) => {
       });
     
     
-      //Voice Functions
-      // Function to get saved voice settings
-      const getSavedVoiceSettings = () => {
-        return {
-          rate: parseFloat(localStorage.getItem('voice-rate') || '1'),
-          pitch: parseFloat(localStorage.getItem('voice-pitch') || '1'),
-          voiceName: localStorage.getItem('voice-name') || ''
-        };
-      };
+//Voice Functions
+
+  // Function to get saved voice settings
+  const getSavedVoiceSettings = async () => {
+    const token = localStorage.getItem('auth_token');
     
-      // Handle speak/stop functionality
-      const handleSpeakOrStop = () => {
-        if (speechSynthRef.current.speaking) {
-          speechSynthRef.current.cancel();
-          setIsSpeaking(false);
-          return;
-        }
-    
-        if (inputText.trim() !== '') {
-          const { rate, pitch, voiceName } = getSavedVoiceSettings();
-          const utterance = new SpeechSynthesisUtterance(inputText);
-          
-          // Apply saved settings
-          utterance.rate = rate;
-          utterance.pitch = pitch;
-          
-          // Set voice if available
-          if (voiceName) {
-            const voices = speechSynthRef.current.getVoices();
-            const savedVoice = voices.find(v => v.name === voiceName);
-            if (savedVoice) {
-              utterance.voice = savedVoice;
-            }
+    // If user is logged in, try to fetch from the server first
+    if (token) {
+      try {
+        const response = await fetch(`${API_URL}/user-settings/voice`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            // Return the settings from the server
+            return {
+              rate: data.settings.rate,
+              pitch: data.settings.pitch,
+              voiceName: data.settings.voiceName
+            };
           }
-    
-          utterance.onend = () => {
-            setIsSpeaking(false);
-          };
-    
-          utteranceRef.current = utterance;
-          speechSynthRef.current.speak(utterance);
-          setIsSpeaking(true);
         }
-      };
+        // If server fetch fails, fall back to localStorage
+      } catch (error) {
+        console.error('Error fetching voice settings:', error);
+        // Continue to localStorage fallback
+      }
+    }
+    // Fallback to localStorage if not logged in or API call failed
+    return {
+      rate: parseFloat(localStorage.getItem('voice-rate') || '1'),
+      pitch: parseFloat(localStorage.getItem('voice-pitch') || '1'),
+      voiceName: localStorage.getItem('voice-name') || ''
+    };
+  };
+    
+  
+// Handle speak/stop functionality
+  const handleSpeakOrStop = async () => {
+    if (speechSynthRef.current.speaking) {
+      speechSynthRef.current.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    if (inputText.trim() !== '') {
+      try {
+        // Get settings asynchronously
+        const { rate, pitch, voiceName } = await getSavedVoiceSettings();
+        
+        const utterance = new SpeechSynthesisUtterance(inputText);
+        
+        // Apply settings
+        utterance.rate = rate;
+        utterance.pitch = pitch;
+        
+        // Set voice if available
+        if (voiceName) {
+          const voices = speechSynthRef.current.getVoices();
+          const savedVoice = voices.find(v => v.name === voiceName);
+          if (savedVoice) {
+            utterance.voice = savedVoice;
+          }
+        }
+
+        utterance.onend = () => {
+          setIsSpeaking(false);
+        };
+
+        utteranceRef.current = utterance;
+        speechSynthRef.current.speak(utterance);
+        setIsSpeaking(true);
+      } catch (error) {
+        console.error('Error getting voice settings:', error);
+        // Fall back to default settings if there's an error
+        const utterance = new SpeechSynthesisUtterance(inputText);
+        utteranceRef.current = utterance;
+        speechSynthRef.current.speak(utterance);
+        setIsSpeaking(true);
+      }
+    }
+  };
     
       // Cleanup on unmount
       useEffect(() => {
@@ -153,6 +193,15 @@ const Communicator = ({ onLogout }:any) => {
           }
         };
       }, []);
+    
+      const voiceContextValue = {
+        voiceRate,
+        voicePitch,
+        voiceName,
+        setVoiceRate,
+        setVoicePitch,
+        setVoiceName,
+      };
     
     
       //Card Functions
@@ -311,6 +360,7 @@ const Communicator = ({ onLogout }:any) => {
 
           {/* Speak/Stop Button */}
           <Card
+            data-testid="speak-button"
             onClick={handleSpeakOrStop}
             className={isSpeaking ? "bg-red-500 hover:bg-red-600 w-16 h-16 flex items-center justify-center cursor-pointer hover:bg-gray-100 p-2" : "w-16 h-16 flex items-center justify-center cursor-pointer hover:bg-gray-100 p-2"}
           >
@@ -326,13 +376,16 @@ const Communicator = ({ onLogout }:any) => {
           </Card>
 
           {/* Voice dialog component */}
-          <Voice
-            isVoiceDialogOpen={isVoiceDialogOpen}
-            setIsVoiceDialogOpen={setIsVoiceDialogOpen}
-            inputText={inputText} />
+          <VoiceContext.Provider value={voiceContextValue}>
+            <Voice
+              isVoiceDialogOpen={isVoiceDialogOpen}
+              setIsVoiceDialogOpen={setIsVoiceDialogOpen}
+              inputText={inputText} />
+          </VoiceContext.Provider>
 
 
           <Card
+            data-testid="delete-word-button"
             className="w-16 h-16 flex items-center justify-center cursor-pointer hover:bg-gray-100 p-2"
             onClick={handleDeleteWord}
           >
@@ -340,6 +393,7 @@ const Communicator = ({ onLogout }:any) => {
           </Card>
 
           <Card
+            data-testid="clear-button"
             className="w-16 h-16 flex items-center justify-center cursor-pointer hover:bg-gray-100 p-3"
             onClick={handleClearText}
           >
@@ -348,7 +402,7 @@ const Communicator = ({ onLogout }:any) => {
 
           <Card className="w-16 h-16 flex items-center justify-center">
             <DropdownMenu>
-              <DropdownMenuTrigger>
+              <DropdownMenuTrigger data-testid="menu-button">
                 <Menu className="h-6 w-6" />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -368,11 +422,6 @@ const Communicator = ({ onLogout }:any) => {
             </DropdownMenu>
           </Card>
         </div>
-
-        {/*Middle Section */}
-        {/* <div className="flex gap-4 w-full">
-      <Alert />
-    </div> */}
 
         {/* Bottom Section */}
         <div className="flex gap-4 flex-1 overflow-hidden">

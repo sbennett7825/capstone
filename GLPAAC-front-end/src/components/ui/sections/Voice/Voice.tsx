@@ -1,42 +1,42 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Button } from '../../button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../dialog';
 import { Volume2, Square, Plus, Minus, Save } from 'lucide-react';
+import axios from 'axios';
+import { VoiceContext } from '../Communicator';
+
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 
 const Voice = ({ isVoiceDialogOpen, setIsVoiceDialogOpen, inputText }) => {
+
+  const voiceContext = useContext(VoiceContext);
+
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [rate, setRate] = useState(() => {
-    const savedRate = localStorage.getItem('voice-rate');
-    return savedRate ? parseFloat(savedRate) : 1;
-  });
-  const [pitch, setPitch] = useState(() => {
-    const savedPitch = localStorage.getItem('voice-pitch');
-    return savedPitch ? parseFloat(savedPitch) : 1;
-  });
-  const [selectedVoice, setSelectedVoice] = useState(() => {
-    return localStorage.getItem('voice-name') || '';
-  });
+  const [rate, setRate] = useState(voiceContext?.voiceRate || 1);
+  const [pitch, setPitch] = useState(voiceContext?.voicePitch || 1);
+  const [selectedVoice, setSelectedVoice] = useState(voiceContext?.voiceName || '');
   const [voices, setVoices] = useState([]);
+  const [saveStatus, setSaveStatus] = useState('');
   const speechSynthRef = useRef(window.speechSynthesis);
-  const utteranceRef = useRef(null);
+  const utteranceRef = useRef(null); 
   
-  // Initialize voices when component mounts
+  const getToken = () => localStorage.getItem('auth_token');
+  
+  // Initialize voices and load user settings when component mounts
+  useEffect(() => {
+    if (isVoiceDialogOpen && voiceContext) {
+      setRate(voiceContext.voiceRate || 1);
+      setPitch(voiceContext.voicePitch || 1);
+      setSelectedVoice(voiceContext.voiceName || '');
+    }
+  }, [isVoiceDialogOpen, voiceContext]);
+  
   useEffect(() => {
     const loadVoices = () => {
       const availableVoices = speechSynthRef.current.getVoices();
       setVoices(availableVoices);
-      
-      if (availableVoices.length > 0) {
-        // If we have a saved voice, try to find it in available voices
-        const savedVoice = localStorage.getItem('voice-name');
-        const voiceExists = savedVoice && availableVoices.some(v => v.name === savedVoice);
-        
-        if (voiceExists) {
-          setSelectedVoice(savedVoice);
-        } else {
-          setSelectedVoice(availableVoices[0].name);
-        }
-      }
     };
 
     // Load voices initially
@@ -45,6 +45,45 @@ const Voice = ({ isVoiceDialogOpen, setIsVoiceDialogOpen, inputText }) => {
     // Chrome requires this event listener to get voices
     speechSynthRef.current.onvoiceschanged = loadVoices;
 
+    // Load user settings from database if logged in, otherwise from localStorage
+    const loadUserSettings = async () => {
+      const token = getToken();
+     
+      if (token) {
+        try {
+          // Try to fetch from server first
+          const response = await axios.get(`${API_URL}/user-settings/voice`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (response.data.success) {
+            setRate(response.data.settings.rate);
+            setPitch(response.data.settings.pitch);
+            setSelectedVoice(response.data.settings.voiceName);
+          }
+        } catch (error) {
+          console.error('Error loading voice settings:', error);
+          // Fall back to localStorage if API call fails
+          loadFromLocalStorage();
+        }
+      } else {
+        // If not logged in, use localStorage
+        loadFromLocalStorage();
+      }
+    };
+    
+    const loadFromLocalStorage = () => {
+      const savedRate = localStorage.getItem('voice-rate');
+      const savedPitch = localStorage.getItem('voice-pitch');
+      const savedVoice = localStorage.getItem('voice-name');
+      
+      if (savedRate) setRate(parseFloat(savedRate));
+      if (savedPitch) setPitch(parseFloat(savedPitch));
+      if (savedVoice) setSelectedVoice(savedVoice);
+    };
+    
+    loadUserSettings();
+
     // Cleanup
     return () => {
       if (utteranceRef.current) {
@@ -52,6 +91,19 @@ const Voice = ({ isVoiceDialogOpen, setIsVoiceDialogOpen, inputText }) => {
       }
     };
   }, []);
+
+  // When voices are loaded, select the saved voice if available
+  useEffect(() => {
+    if (voices.length > 0 && selectedVoice) {
+      const voiceExists = voices.some(v => v.name === selectedVoice);
+      
+      if (!voiceExists) {
+        setSelectedVoice(voices[0].name);
+      }
+    } else if (voices.length > 0 && !selectedVoice) {
+      setSelectedVoice(voices[0].name);
+    }
+  }, [voices, selectedVoice]);
 
   const handleSpeak = () => {
     if (speechSynthRef.current.speaking) {
@@ -83,27 +135,77 @@ const Voice = ({ isVoiceDialogOpen, setIsVoiceDialogOpen, inputText }) => {
     }
   };
 
-  const saveVoiceSettings = () => {
-    localStorage.setItem('voice-rate', rate);
-    localStorage.setItem('voice-pitch', pitch);
-    localStorage.setItem('voice-name', selectedVoice);
+  const saveVoiceSettings = async () => {
     
-    // Flash feedback (could be replaced with a toast notification)
-    const saveButton = document.getElementById('save-voice-button');
-    if (saveButton) {
-      saveButton.classList.add('bg-green-500');
-      setTimeout(() => {
-        saveButton.classList.remove('bg-green-500');
-      }, 500);
+    // Save to localStorage as fallback
+    localStorage.setItem('voice-rate', rate.toString());
+    localStorage.setItem('voice-pitch', pitch.toString());
+    localStorage.setItem('voice-name', selectedVoice);
+      
+    // Update context if available
+    if (voiceContext) {
+      voiceContext.setVoiceRate(rate);
+      voiceContext.setVoicePitch(pitch);
+      voiceContext.setVoiceName(selectedVoice);
+    }
+      
+    // If user is logged in, save to database
+    const token = getToken();
+    if (token) {
+      try {
+        setSaveStatus('saving');
+        
+        const response = await axios.post(
+          `${API_URL}/user-settings/voice`,
+          {
+            rate,
+            pitch,
+            voiceName: selectedVoice
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        
+        if (response.data.success) {
+          setSaveStatus('success');
+          setTimeout(() => setSaveStatus(''), 1500);
+        } else {
+          setSaveStatus('error');
+          setTimeout(() => setSaveStatus(''), 1500);
+        }
+      } catch (error) {
+        console.error('Error saving voice settings:', error);
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus(''), 1500);
+      }
+    } else {
+      // For non-logged in users, just show success for localStorage save
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus(''), 1500);
     }
   };
 
-  const adjustRate = (amount:any) => {
+  const adjustRate = (amount) => {
     setRate(prev => Math.max(0.5, Math.min(2, prev + amount)));
   };
 
-  const adjustPitch = (amount:any) => {
+  const adjustPitch = (amount) => {
     setPitch(prev => Math.max(0.5, Math.min(2, prev + amount)));
+  };
+
+  // Get button color based on save status
+  const getSaveButtonClass = () => {
+    switch (saveStatus) {
+      case 'saving':
+        return 'bg-yellow-500 hover:bg-yellow-600';
+      case 'success':
+        return 'bg-green-500 hover:bg-green-600';
+      case 'error':
+        return 'bg-red-500 hover:bg-red-600';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -213,11 +315,14 @@ const Voice = ({ isVoiceDialogOpen, setIsVoiceDialogOpen, inputText }) => {
           </Button>
           <Button
             id="save-voice-button"
-            onClick={() => {saveVoiceSettings(); setIsVoiceDialogOpen(null);}}
-            className="transition-colors"
+            onClick={async () => {
+              await saveVoiceSettings();
+              setIsVoiceDialogOpen(null);
+            }}
+            className={`transition-colors ${getSaveButtonClass()}`}
           >
             <Save className="mr-2" size={16} />
-            Save
+            {saveStatus === 'saving' ? 'Saving...' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

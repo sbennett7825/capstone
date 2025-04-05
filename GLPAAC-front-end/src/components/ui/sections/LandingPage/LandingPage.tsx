@@ -15,11 +15,9 @@ import {
   DialogTrigger,
 } from "../../dialog";
 import { Button } from "../../button";
-// import { Input } from "../../input";
-// import { Label } from "../../label";
 import { Menu } from 'lucide-react';
 
-import SignUpForm from "./SignupForm";
+import SignUpForm from "./SignUpForm";
 import LoginForm from "./LoginForm";
 
 
@@ -28,18 +26,18 @@ const LandingPage = ({ onLoginSuccess }:any) => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-200">
       <header className="py-6 px-8 flex justify-between items-center bg-gradient-to-b from-purple-500 to-gray-50">
-        <h1 className="text-2xl font-bold text-gray-800">GLPAAC</h1>
+        <h1 className="text-2xl font-bold text-gray-800" data-testid="title">GLPAAC</h1>
 
 <Card className="w-16 h-16 flex items-center justify-center">
             <DropdownMenu>
-              <DropdownMenuTrigger>
+              <DropdownMenuTrigger data-testid="dropdown-menu-trigger-button">
                 <Menu className="h-6 w-6" />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
               <div className="w-64 p-2">
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" className="w-full justify-start">
+                      <Button variant="ghost" className="w-full justify-start" data-testid="login-button">
                         Login
                       </Button>
                     </DialogTrigger>
@@ -56,7 +54,7 @@ const LandingPage = ({ onLoginSuccess }:any) => {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" className="w-full justify-start">
+                      <Button variant="ghost" className="w-full justify-start" data-testid="signup-button">
                         Sign Up
                       </Button>
                     </DialogTrigger>
@@ -77,7 +75,7 @@ const LandingPage = ({ onLoginSuccess }:any) => {
       </header>
       
       <main className="container mx-auto px-4 py-16 flex flex-col items-center text-center">
-        <h2 className="text-5xl font-bold text-gray-900 mb-6">GLPAAC</h2>
+        <h2 className="text-5xl font-bold text-gray-900 mb-6" data-testid="banner-heading">GLPAAC</h2>
         <p className="text-xl text-gray-600 max-w-2xl mb-8">
           The first Augmentative and Alternative Communication (AAC) 
           application for Gestalt Language Processors (GLP).
@@ -89,7 +87,7 @@ const LandingPage = ({ onLoginSuccess }:any) => {
         <div className="flex gap-4">
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="bg-purple-500" size="lg">Get Started</Button>
+              <Button className="bg-purple-500" size="lg" data-testid="get-started-button">Get Started</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -101,7 +99,7 @@ const LandingPage = ({ onLoginSuccess }:any) => {
               <SignUpForm />
             </DialogContent>
           </Dialog>
-          <Button variant="outline" size="lg">Learn More</Button>
+          <Button variant="outline" size="lg" data-testid="learn-more-button">Learn More</Button>
         </div>
       </main>
     </div>

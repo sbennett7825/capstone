@@ -1,6 +1,6 @@
 # GLPAAC Front-End
 
-This is the front-end client for the GLPAAC (Gestalt Language Processors Augmentative and Alternative Communication) application.
+These are the instructions for the front-end client for the GLPAAC (Gestalt Language Processors Augmentative and Alternative Communication) application.
 
 ## Setup Instructions
 
@@ -10,19 +10,19 @@ This is the front-end client for the GLPAAC (Gestalt Language Processors Augment
    ```
    npm install
    ```
-4. Create a temporary token for the opensymbols.org API:
-  ```
-  Go to opensymbols.org/api, click "submit" under "Generate Access Token", scroll to the "GET" parameters, copy the "access_token", and paste this temporary token in the `.env` file after "VITE_REACT_APP_ACCESS_KEY="
-  ```
 
-5. Start the development server:
+
+4. Start the development client in a separate terminal for `GLPAAC-front-end`
    ```
    npm run dev
    ```
 
 ### Testing
 
-
+- Run test files in the terminal:
+   ```
+   npm run test
+   ```
 
 
 

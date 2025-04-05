@@ -1,12 +1,10 @@
+
 // GLPAAC-back-end/middleware/auth.js
+
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
-/**
- * Middleware to authenticate JWT tokens
- * Use this on protected routes
- */
 const auth = (req, res, next) => {
   // Get token from header
   const authHeader = req.headers.authorization;
